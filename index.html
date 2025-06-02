@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caça-Palavras de Marketing Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-4xl">
+        <h1 class="text-2xl font-bold text-center mb-4">Caça-Palavras de Marketing Digital</h1>
+        <div id="login" class="mb-4">
+            <input id="playerName" type="text" placeholder="Digite seu nome" class="border p-2 rounded w-full mb-2">
+            <button onclick="joinGame()" class="bg-blue-500 text-white p-2 rounded w-full hover:bg-blue-600">Entrar no Jogo</button>
+        </div>
+        <div id="game" class="hidden">
+            <div class="flex justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-semibold">Jogadores</h2>
+                    <ul id="playerList" class="list-disc pl-5"></ul>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold">Palavras</h2>
+                    <ul id="wordList" class="list-disc pl-5"></ul>
+                </div>
+            </div>
+            <div id="grid" class="grid gap-1 bg-gray-200 p-4 rounded"></div>
+            <p id="message" class="text-center mt-4 text-lg"></p>
+        </div>
+    </div>
+    <script>
+        let playerName = '';
+        let selectedCells = [];
+        let words = ['SEO', 'ADS', 'BRANDING', 'CONTEUDO', 'ENGAGE', 'TRAFEGO', 'LEADS', 'FUNIL', 'CAMPANHA', 'METRICAS'];
+        let gridSize = 12;
+        let grid = [];
+
+        function joinGame() {
+            playerName = document.getElementById('playerName').value.trim();
+            if (!playerName) {
+                alert('Por favor, insira um nome!');
+                return;
+            }
+            document.getElementById('login').classList.add('hidden');
+            document.getElementById('game').classList.remove('hidden');
+            generateGrid();
+        }
+
+        function generateGrid() {
+            grid = Array(gridSize).fill().map(() => Array(gridSize).fill(''));
+            const unplacedWords = [];
+            words.forEach(word => {
+                if (!placeWord(word)) {
+                    unplacedWords.push(word);
+                }
+            });
+            if (unplacedWords.length > 0) {
+                console.log('Palavras não colocadas:', unplacedWords);
+                generateGrid();
+                return;
+            }
+            fillEmptyCells();
+            const gridElement = document.getElementById('grid');
+            gridElement.style.gridTemplateColumns = `repeat(${gridSize}, minmax(0, 1fr))`;
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'w-10 h-10 bg-white border flex items-center justify-center text-lg font-mono cursor-pointer';
+                    cell.textContent = grid[i][j];
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.addEventListener('click', () => selectCell(i, j, cell));
+                    gridElement.appendChild(cell);
+                }
+            }
+            updateWordList();
+        }
+
+        function placeWord(word) {
+            let placed = false;
+            let attempts = 0;
+            const maxAttempts = 100;
+            while (!placed && attempts < maxAttempts) {
+                const row = Math.floor(Math.random() * gridSize);
+                const col = Math.floor(Math.random() * (gridSize - word.length + 1));
+                let canPlace = true;
+                for (let i = 0; i < word.length; i++) {
+                    if (grid[row][col + i] !== '' && grid[row][col + i] !== word[i]) {
+                        canPlace = false;
+                        break;
+                    }
+                }
+                if (canPlace) {
+                    for (let i = 0; i < word.length; i++) {
+                        grid[row][col + i] = word[i];
+                    }
+                    placed = true;
+                }
+                attempts++;
+            }
+            return placed;
+        }
+
+        function fillEmptyCells() {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    if (grid[i][j] === '') {
+                        grid[i][j] = letters[Math.floor(Math.random() * letters.length)];
+                    }
+                }
+            }
+        }
+
+        function selectCell(row, col, cell) {
+            if (!selectedCells.some(c => c.row === row && c.col === col)) {
+                selectedCells.push({ row, col });
+                cell.classList.add('bg-blue-300');
+                checkWord();
+            }
+        }
+
+        function checkWord() {
+            let selectedWord = '';
+            selectedCells.sort((a, b) => a.col - b.col);
+            selectedCells.forEach(cell => selectedWord += grid[cell.row][cell.col]);
+            if (words.includes(selectedWord)) {
+                selectedCells.forEach(cell => {
+                    const cellElement = document.querySelector(`[data-row="${cell.row}"][data-col="${cell.col}"]`);
+                    cellElement.classList.remove('bg-blue-300');
+                    cellElement.classList.add('bg-green-300');
+                });
+                document.getElementById('message').textContent = `${playerName} encontrou a palavra ${selectedWord}!`;
+                words = words.filter(w => w !== selectedWord);
+                updateWordList();
+                if (words.length === 0) {
+                    document.getElementById('message').textContent = `Jogo terminado! ${playerName} venceu!`;
+                }
+                selectedCells = [];
+            }
+        }
+
+        function updateWordList() {
+            const wordList = document.getElementById('wordList');
+            wordList.innerHTML = '';
+            words.forEach(word => {
+                const li = document.createElement('li');
+                li.textContent = word;
+                wordList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
